@@ -1,0 +1,13 @@
+diff --git a/build.bash b/build.bash
+index 5e95c3e..7204db8 100755
+--- a/build.bash
++++ b/build.bash
+@@ -78,7 +78,7 @@ if [[ -z ${GOFLAGS:-} ]] ; then
+ 	export GOFLAGS
+ fi
+ 
+-GO_LDFLAGS="-X \"main.GitVersion=$GITVERSION\" -X \"main.GitVersionFuse=$GITVERSIONFUSE\" -X \"main.BuildDate=$BUILDDATE\""
++GO_LDFLAGS="-X \"main.GitVersion=$GITVERSION\" -X \"main.GitVersionFuse=$GITVERSIONFUSE\" -X \"main.BuildDate=$BUILDDATE\" -s -w"
+ 
+ # If LDFLAGS is set, add it as "-extldflags".
+ if [[ -n ${LDFLAGS:-} ]] ; then

@@ -1,0 +1,40 @@
+#!/usr/bin/execlineb -P
+
+# import GOCRYPTFS_MOUNTS_FILE environment variable
+with-contenv
+importas -D /gocryptfs/mounts.csv -u GOCRYPTFS_MOUNTS_FILE GOCRYPTFS_MOUNTS_FILE
+
+# ensure GOCRYPTFS_MOUNTS_FILE is readable
+if { test -r ${GOCRYPTFS_MOUNTS_FILE} }
+
+# pipe sed output to forstdin command to process line by line
+pipeline
+
+# use sed to print GOCRYPTFS_MOUNTS_FILE without first line (csv header row)
+{ sed -ne "1d;p" ${GOCRYPTFS_MOUNTS_FILE} }
+
+# split lines by comma into NAME, CIPHERDIR, MOUNTPOINT, and PASSFILE variables
+forstdin -E -p LINE
+multidefine -d "," ${LINE}
+{ NAME CIPHERDIR MOUNTPOINT PASSFILE }
+
+# make service directories and files
+define SERVICE_DIR /etc/services.d/gocryptfs-${NAME}
+define SERVICE_FILE ${SERVICE_DIR}/run
+foreground { mkdir -p ${MOUNTPOINT} ${SERVICE_DIR} }
+foreground { touch ${SERVICE_FILE} }
+foreground { chmod 0755 ${SERVICE_FILE} }
+
+# generate execlineb script to mount gocryptfs cipherdir
+heredoc -d 0
+"#!/usr/bin/execlineb -P
+
+# ensure gocryptfs config is readable
+loopwhilex -x 0 if { test -r ${CIPHERDIR}/gocryptfs.conf }
+
+# run gocryptfs to mount '${CIPHERDIR}' at '${MOUNTPOINT}'
+# gocryptfs -allow_other -debug -fg -nosyslog -passfile ${PASSFILE} -ro ${CIPHERDIR} ${MOUNTPOINT}
+gocryptfs -allow_other -fg -nosyslog -passfile ${PASSFILE} ${CIPHERDIR} ${MOUNTPOINT}
+"
+redirfd -w 1 /dev/null
+tee ${SERVICE_FILE}
